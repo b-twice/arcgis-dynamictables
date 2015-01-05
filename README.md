@@ -10,7 +10,7 @@ Within your mxd you will need to enable data driven pages on a layer and set the
 
 The next phase of setup all happens within the "Layout View" of your mxd. Once there, you need to establish where your table is going to go on your page and then construct the first row or header of your table. This would look something like:
 
-| Building Number   | Square Feet   |
+| Building Name   | Square Feet   |
 | :---------------: | :-----------: |
 
 Here we will have two elements for each field name. There will be a graphic element surrounding the Building Number and there will be a text element displaying the text "Building Number". The same goes for "Square Feet" heading.
@@ -32,17 +32,36 @@ Let's work with some made up sectors in an unknown township. There are ten of th
 
 The first task would be to setup a the "Sectors" feature class as an index layer in data driven pages and pass the "Sector_Name" to the parameter "Name Field".
 
-Then in an mxd under "Layout View" we set up the header of our table with for building numbers and square feet and name the respective graphic and text elements "Building_Name" and "Square_Feet" as we have in the attribute table of the "Buildings" feature class.
+Then in an mxd under "Layout View" we set up the header of our table with building names and square feet and label the respective graphic and text elements "Building_Name" and "Square_Feet" as we have in the attribute table of the "Buildings" feature class.
 
 From here, we run an intersect in GIS with the "Buildings" and "Sectors" feature class to generate a table of all buildings by sector.
 
 This is our table.
 
+Now we just need to export out the pieces of the table on the correct index layer to display the likes of:
+
+##### Sector 1 Map
+
+| Building Name     | Square Feet   |
+| :---------------: | :-----------: |
+| The Brown         | 20,000        |
+| Pigeon Hole       | 200           |
+| Aces              | 576           |
+
+##### Sector 2 Map
+
+| Building Name     | Square Feet   |
+| :---------------: | :-----------: |
+| Hull and Husk     | 10            |
+| Dynamite Den      | 900           |
+| Rubee Den         | 55            |
+| Buyer's Remorse   | 10,0000       |
+
 ### Putting it Together
 
-When the script is executed, it will start on the first page of the data driven pages, look at the "Field Name" of the index layer and query the table for a field with that name and all the elements within the table that the current page of the index layer (i.e. give me all "Sector One" buildings).
+When the script is executed, it will start on the first page of the data driven pages, look at the pull Sector One of the index layer and query the table the field "Sector" = 'Sector One' and pull all elements that match 'Sector One'.
 
-Then it will look through the map for all graphic and text elements. From our example, it would then start with "Building Number" and look in the table for a field with the element name "Building_Number" and gather all the building numbers within "Sector One" and add them to the table. It would then move on and do the same for the "Square Feet" element.
+Then it will look through the map for all graphic and text elements. From our example, it would then start with the "Building Name" elements and look in the table for a field with the element name "Building_Name" and gather all the building name within "Sector One" and add them to the table. It would then move on and do the same for the "Square Feet" element.
 
 Once the table is complete for "Sector One" a pdf will be exported, the mxd refreshed, and "Sector Two" will begin.
 
