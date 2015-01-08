@@ -8,12 +8,18 @@ For any data driven pages setup you need an index layer. The index layer is a se
 
 Within your mxd you will need to enable data driven pages on a layer and set the "Name Field" parameter. This "Name Field" will be a key component later on in querying your table (i.e. dbf).
 
-The next phase of setup all happens within the "Layout View" of your mxd. Once there, you need to establish where your table is going to go on your map and then construct the first row or header of your table. This would look something like:
+The next phase of setup all happens within the "Layout View" of your mxd. Once there, you need to establish where your table is going to go on your map and then construct the first row or header of your table.
+
+First we start with our graphic elements. These would look like two boxes to make our header:
+
+|           |           |
+
+Then we add our text elements. These would be placed into the boxes as so:
 
 | Building Name     | Square Feet   |
 | :---------------: | :-----------: |
 
-Here we will have two elements for each field name. There will be a graphic element surrounding the Building Number and there will be a text element displaying the text "Building Number." The same goes for "Square Feet" heading.
+Now we have two elements for each column or field name. There will be a graphic element surrounding the Building Number and there will be a text element displaying the text "Building Number".
 
 To read more about mxd elements see the [documentation](http://resources.arcgis.com/en/help/main/10.1/index.html#/ListLayoutElements/00s30000003w000000/)
 
@@ -113,24 +119,26 @@ map_doc = arcpy.mapping.MapDocument(path_to_mxd)
 arcpy.mapping.ListLayoutElements(map_doc, element_type)
 ```
 
-First we initialize and then use ListLayoutElements to list all elements of a given "element_type". There are a number of element types but the ones we would want to list are "GRAPHIC_ELEMENT" and "TEXT_ELEMENT."
+First we initialize and then use [ListLayoutElements](http://resources.arcgis.com/en/help/main/10.1/index.html#//00s30000003w000000) to list all elements of a given "element_type". There are a number of element types but the ones we would want to list are "GRAPHIC_ELEMENT" and "TEXT_ELEMENT."
 
-This gives of a list of all objects associated with that element. In this way, we have some python shorthand, we can quickly make a list of tuples with the object name and the object with a list comprehension:
+This gives of a list of all objects associated with that element. In this way, with the help of some python shorthand, we can quickly make a list of tuples with the object name and the object via a list comprehension:
 
 ```
 element_map = [(str(obj.name), obj) for obj in arcpy.mapping.ListLayoutElements(map_doc, element_type) if len(str(obj.name)) > 0]
 ```
 
-What we are doing is looping through the layout elements, filtering out any elements that do not have a name (think back to above when we went through and named elements with corresponding field names from our attribute table), and making a tuple.
+What we are doing is looping through the layout elements and filtering out any elements that do not have a name (think back to above when we went through and named elements with corresponding field names from our attribute table). We then append to our list a tuple with the name of the object and the object.
 
 In our example the list would look like
 
 ```
 [
-("Building_Name", "<object>"),
-("Square_Feet", "<object>")
+("Building_Name", <object>),
+("Square_Feet", <object>)
 ]
 ```
+
+With this list in hand, we can initiate a cursor on our table. If a field matches an element, their are properties and methods in an element we can ultilize to make a new cell in our table.
 
 To Be Continued....
 
@@ -140,4 +148,8 @@ To Be Continued....
 2. TABLE = The pathname to a table with field names that match the graphic and text elements and the index layer
 3. DESTINATION = Where to send all the pdfs on export
 
+### TODO
 
+1. Support rectangle text box graphics
+2. Add python toolbox
+3. More testing
