@@ -13,6 +13,7 @@ The next phase of setup all happens within the "Layout View" of your mxd. Once t
 First we start with our graphic elements. These would look like two boxes to make our header:
 
 |           |           |
+| --------- | --------- |
 
 Then we add our text elements. These would be placed into the boxes as so:
 
