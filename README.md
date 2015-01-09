@@ -121,7 +121,9 @@ First we initialize our mxd and then use [ListLayoutElements](http://resources.a
 This gives of a list of all objects associated with that element. In this way, with the help of some python shorthand, we can quickly make a list of tuples with the object name and the object via a list comprehension:
 
 ```
-element_map = [(str(obj.name), obj) for obj in arcpy.mapping.ListLayoutElements(map_doc, element_type) if len(str(obj.name)) > 0]
+element_map = [
+(str(obj.name), obj) for obj in arcpy.mapping.ListLayoutElements(map_doc, element_type)
+if len(str(obj.name)) > 0]
 ```
 
 What we are doing is looping through the layout elements and filtering out any elements that do not have a name (think back to above when we went through and named elements with corresponding field names from our attribute table). We then append to our list a tuple with the name of the object and the object.
@@ -139,19 +141,19 @@ With this list in hand, we can initiate a cursor on our table. If a field matche
 
 The first step is to take our graphic element and clone it.
 
-'''
+```
 clone = <graphic object>.clone()
-'''
+```
 
 We call the clone method to clone our graphic element. Just like copying and pasting in ArcMap.
 
 To move our cell down all we must needs do is find the height of our cell and subtract it from the Y-coordinate of our element. Fortunately, [accessing properties](http://resources.arcgis.com/en/help/main/10.1/index.html#//00s300000040000000) is straightfoward.
 
 
-'''
+```
 height = clone.elementHeight
 clone.elementPositionY -= height
-'''
+```
 
 In a snap, our map would now display:
 
@@ -163,11 +165,11 @@ Working with text elements is very much the same. You can access a text elements
 
 To move the text into the cell below you can use the height from your graphic object:
 
-'''
+```
 text_clone = <text object>.clone()
 clone.elementPositionY -= height
-clone.text = "Sad Ice Cream Shop"
-'''
+clone.text = 'Sad Ice Cream Shop'
+```
 
 | Building_Name          |
 | :--------------------: |
