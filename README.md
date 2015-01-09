@@ -22,11 +22,9 @@ Then we add our text elements. These would be placed into the boxes as so:
 
 Now we have two elements for each column or field name. There will be a graphic element surrounding the Building Number and there will be a text element displaying the text "Building Number".
 
-To read more about mxd elements see the [documentation](http://resources.arcgis.com/en/help/main/10.1/index.html#/ListLayoutElements/00s30000003w000000/)
-
 Within the mxd you will need to then right click each element, go to "Properties" and under the tab "Size and Position" provide a name for the parameter "Element Name". The name would be identical for both the graphic and text elements of the same kind i.e. "Building_Name" for both the graphic and text elements that make up that box). If an element does not have a name, the script will pass over it.
 
-Now what sort of name do you want for these elements? They key the name of these elements must match the field names in the attribute table where the data is stored. Let's look at an example to show you how everything gets connected.
+Now what sort of name do you want for these elements? The key is the name of these elements must match the field names in the attribute table where the data is stored. Let's look at an example to show you how everything gets connected.
 
 ### Looking at Sectors
 
@@ -62,7 +60,7 @@ Then in an mxd under "Layout View" we set up the header of our table with buildi
 
 From here, we run an intersect in GIS with the "Buildings" and "Sectors" feature class to generate a table of all buildings by sector.
 
-This is our table which will look something like:
+This table appears as:
 
 | Sector_Name | Building_Name     | Square_Feet   |
 | :---------: | :---------------: | :-----------: |
@@ -74,9 +72,9 @@ This is our table which will look something like:
 | Two         | Rubee Den         | 55            |
 | Two         | Buyer's Remorse   | 10,000        |
 
-And so forth. What we want to show, then, is as data driven pages exports out each map, we all the rows of the table of the corresponding sector to be displayed on the map.
+And so forth. What we want to show, then, is as data driven pages exports out each map, all the corresponding rows with that map should be displayed.
 
-Now on our maps we will find some nice tables generated with the precision and love you deserve.
+If we succeed, we will find some nice tables generated with the precision and love you deserve.
 
 ##### Sector 1 Map
 
@@ -99,7 +97,7 @@ Now on our maps we will find some nice tables generated with the precision and l
 
 When the script is executed, it will start on the first page of the data driven pages, look at 'Name Field' of the index layer and find the "Sector_Name" field and the current page we are on, Sector One.
 
-It will then query the field "Sector_Name" in the table we passed to the script for all Sector One rows. With these rows, it will match up any fields in the table that match the names of elements in our mxd. So if a field is named "Building_Name" it will find these elements and start constructing the table. Then it will go to the next field 'Square_Feet', find any matching elements, and build construct that column.
+It will then query the field "Sector_Name" in the table we passed to the script for all Sector One rows. With these rows, it will match up any fields in the table that match the names of elements in our mxd. So if a field is named "Building_Name" it will find these elements and start constructing the table. Then it will go to the next field 'Square_Feet', and add the appropriate values.
 
 Once the table is complete for Sector One a pdf will be exported, the mxd refreshed, and Sector Two will begin.
 
@@ -118,7 +116,7 @@ map_doc = arcpy.mapping.MapDocument(path_to_mxd)
 arcpy.mapping.ListLayoutElements(map_doc, element_type)
 ```
 
-First we initialize and then use [ListLayoutElements](http://resources.arcgis.com/en/help/main/10.1/index.html#//00s30000003w000000) to list all elements of a given "element_type". There are a number of element types but the ones we would want to list are "GRAPHIC_ELEMENT" and "TEXT_ELEMENT."
+First we initialize our mxd and then use [ListLayoutElements](http://resources.arcgis.com/en/help/main/10.1/index.html#//00s30000003w000000) to list all elements of a given "element_type". There are a number of element types but the ones we would want to list are "GRAPHIC_ELEMENT" and "TEXT_ELEMENT."
 
 This gives of a list of all objects associated with that element. In this way, with the help of some python shorthand, we can quickly make a list of tuples with the object name and the object via a list comprehension:
 
@@ -128,7 +126,7 @@ element_map = [(str(obj.name), obj) for obj in arcpy.mapping.ListLayoutElements(
 
 What we are doing is looping through the layout elements and filtering out any elements that do not have a name (think back to above when we went through and named elements with corresponding field names from our attribute table). We then append to our list a tuple with the name of the object and the object.
 
-In our example the list would look like
+In our example the list appears as:
 
 ```
 [
@@ -147,7 +145,7 @@ clone = <graphic object>.clone()
 
 We call the clone method to clone our graphic element. Just like copying and pasting in ArcMap.
 
-To move our cell down all we must needs do is find the height of our cell and subtract it from the Y-coordinate of our element. Fortunately [accessing properties](http://resources.arcgis.com/en/help/main/10.1/index.html#//00s300000040000000) is straightfoward.
+To move our cell down all we must needs do is find the height of our cell and subtract it from the Y-coordinate of our element. Fortunately, [accessing properties](http://resources.arcgis.com/en/help/main/10.1/index.html#//00s300000040000000) is straightfoward.
 
 
 '''
@@ -168,12 +166,12 @@ To move the text into the cell below you can use the height from your graphic ob
 '''
 text_clone = <text object>.clone()
 clone.elementPositionY -= height
-clone.text = "Sad Ice Cream"
+clone.text = "Sad Ice Cream Shop"
 '''
 
 | Building_Name          |
 | :--------------------: |
-| Sad Ice Cream          |
+| Sad Ice Cream Shop     |
 
 And that's the bulk of working with elements in ArcMap. Now, for more advanced users you might notice that the manipulation of elements is limited. If you dive into all the properties available to style and design graphic and text objects in ArcMap, you will find a tome before you.
 

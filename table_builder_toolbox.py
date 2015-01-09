@@ -1,0 +1,170 @@
+import arcpy
+import os
+
+##
+##### Helper Functions
+##
+
+def map_elements (map_doc, element_type):
+    ''' Takes an Element Type i.e. "GRAPHIC_ELEMENT", "TEXT_ELEMENT" and
+        builds a dictionary with the name of the element as the key and the
+        object as the value. Excludes all elements not given a name '''
+    element_map = sorted([(str(obj.name), obj)
+        for obj in arcpy.mapping.ListLayoutElements(map_doc, element_type)
+                   if len(str(obj.name)) > 0], key = lambda name: name[0])
+    return {element[0]:element[1] for element in element_map}
+
+def get_element_dimensions (element_object):
+    ''' return tuple with element dimensions '''
+    return element_object.elementHeight, element_object.elementWidth
+
+def get_element_coordinates (element_object):
+    ''' return tuple of element coordinates '''
+    return element_object.elementPositionY, element_object.elementPositionX
+
+def make_graphic_cell(graphic_object, row_depth):
+    graphic_height = get_element_dimensions(graphic_object)[0]
+    graphic_clone = graphic_object.clone()
+    graphic_clone.elementPositionY -= (graphic_height * row_depth)
+
+def make_text_cell(text_object, graphic_object, text_content, row_depth):
+    graphic_height, graphic_width = get_element_dimensions(graphic_object)
+    graphic_x = get_element_coordinates(graphic_object)[1]
+    text_clone = text_object.clone()
+    text_clone.elementPositionY -= (graphic_height * row_depth)
+    text_clone.text = text_content
+    text_width = get_element_dimensions(text_clone)[1]
+    text_clone.elementPositionX = (graphic_x + (graphic_width / 2.0)) - (text_width / 2.0)
+
+def to_pdf(map_doc, destination, page_id, page_index):
+    ''' moves through data driven pages, exporting pdf '''
+    map_doc.dataDrivenPages.currentPageID = page_id
+    print "Exporting to PDF: {}".format(page_index)
+    export_name = os.path.join(destination, "{}.pdf".format(page_index))
+    map_doc.dataDrivenPages.exportToPDF(export_name, "CURRENT",
+        resolution=300, picture_symbol="VECTORIZE_BITMAP")
+
+##
+##### MISC Functions
+##
+
+def move_arrow (map_doc, position_x, position_y):
+    ''' adjust the north arrow as needed dependent on whether north arrow
+        obstructs a view in ddp '''
+    north_arrow = map_elements(map_doc, "MAPSURROUND_ELEMENT")["North Arrow"]
+    north_arrow.elementPositionY = position_x
+    north_arrow.elementPositionX = position_y
+
+##
+##### Application
+##
+
+class GenerateTable(object):
+    ''' To cycle through a ddp setup in an mxd and export out a unique table
+        on each map, field names must match exactly between graphic and text
+        elements in an mxd and the table passed into the class. Further, the
+        ddp index name must also match a field in the table '''
+    def __init__ (self, mxd, data, destination):
+        self.mxd = mxd
+        self.table = data
+        self.destination = destination
+        self.ddp_field = arcpy.mapping.MapDocument(mxd).dataDrivenPages.pageNameField.name
+
+    def initialize(self):
+        ''' A temporary MXD is created to find the datasource of the ddp in
+            the mxd, and then a cursor loops through the mxd wherein each loop
+            translates to one map constructed and exported '''
+        temp_map_doc = arcpy.mapping.MapDocument(self.mxd)
+        ddp_layer = arcpy.mapping.ListLayers(temp_map_doc,
+            temp_map_doc.dataDrivenPages.indexLayer)[0].dataSource
+        cursor = arcpy.SearchCursor(ddp_layer)
+        for page_id, map_page in enumerate(cursor, start=1):
+            self.construct_table(page_id, map_page)
+        del cursor
+
+    def construct_table(self, page_id, map_page):
+        ''' A new mxd is stfarted to purge any previous tables that may have
+            been constructed beforehand '''
+        map_doc = arcpy.mapping.MapDocument(self.mxd)
+        page_index = map_page.getValue(self.ddp_field)
+        self.build_rows(map_doc, page_index)
+        to_pdf(map_doc, self.destination, page_id, page_index)
+
+
+    def build_rows(self, map_doc, page_index):
+        ''' If you build it, they will come '''
+        graphic_map =  map_elements(map_doc, "GRAPHIC_ELEMENT")
+        text_map = map_elements(map_doc, "TEXT_ELEMENT")
+        table_cursor = arcpy.SearchCursor(self.table)
+        row_depth = 1
+        for row in table_cursor:
+            if row.getValue(self.ddp_field) == page_index:
+                for field in graphic_map.keys():
+                    make_graphic_cell(graphic_map[field], row_depth)
+                    make_text_cell(text_map[field], graphic_map[field], row.getValue(field), row_depth)
+                row_depth += 1
+        del table_cursor
+
+##
+##### Application toolbox
+##
+
+class Toolbox(object):
+    def __init__(self):
+        self.label = "Dynamic Table Builder"
+        self.alias = "Tool to build tables in data driven pages."
+        self.tools = [Build]
+
+
+class Build(object):
+
+    def __init__(self):
+        self.label = "Build Tables"
+        self.description = ''' Construct a unique table on each page of data
+         driven pages.'''
+        self.canRunInBackground = True
+
+    def getParameterInfo(self):
+
+        in_map = arcpy.Parameter(
+            displayName = 'Input Map Document',
+            name = 'in_mao',
+            datatype = 'DEMapDocument',
+            parameterType = 'Required',
+            direction = 'Input')
+
+        in_table = arcpy.Parameter(
+            displayName = 'Pull Attachments?',
+            name = 'in_table',
+            datatype = 'DETable',
+            parameterType = 'Required',
+            direction = 'Input')
+
+        out_directory = arcpy.Parameter(
+            displayName = 'Output Directory',
+            name = 'out_directory',
+            datatype = 'DEFolder',
+            parameterType = 'Required',
+            direction = 'Input')
+
+        out_directory.filter.list = ['File System']
+        params = [in_map, in_table, out_directory]
+        return params
+
+    def isLicensed(self):
+        return True
+
+    def updateParameters(self, parameters):
+        return
+
+    def updateMessages(self, parameters):
+        return
+
+    def execute(self, parameters, messages):
+        in_map = parameters[0].valueAsText
+        in_table = parameters[1].valueAsText
+        out_directory = parameters[2].valueAsText
+
+        app = GenerateTable(in_map, in_table, out_directory)
+        app.initialize()
+
