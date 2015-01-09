@@ -28,15 +28,13 @@ Within the mxd you will need to then right click each element, go to "Properties
 
 Now what sort of name do you want for these elements? They key the name of these elements must match the field names in the attribute table where the data is stored. Let's look at an example to show you how everything gets connected.
 
-### The Setup - Looking at Sectors
+### Looking at Sectors
 
 We have sectors in an unknown township. There are five of these sectors, and the aim is to produce five different maps listing all the buildings by their name and their square footage in a table on the map.
 
- So what we are working with is:
+ So what we are working with is...
 
-- A "Sectors" feature class with 5 sectors. Each sector has a name which is found in the feature "Sector_Name" within the attribute table
-
-The attribute table looks like:
+- A "Sectors" feature class with 5 sectors with an attribute table of:
 
 | Sector_Name            |
 | :--------------------: |
@@ -46,7 +44,7 @@ The attribute table looks like:
 | Four                   |
 | Five                   |
 
-- A "Buildings" feature class with a variable number of buildings within each sector. The attribute table has "Building_Name" and "Square_Feet" fields and the table looks like:
+- A "Buildings" feature class with a variable number of buildings within each sector, with an tritribute table of:
 
 | Building_Name     | Square_Feet   |
 | :---------------: | :-----------: |
@@ -78,7 +76,7 @@ This is our table which will look something like:
 
 And so forth. What we want to show, then, is as data driven pages exports out each map, we all the rows of the table of the corresponding sector to be displayed on the map.
 
-Sometihng to the likes of:
+Now on our maps we will find some nice tables generated with the precision and love you deserve.
 
 ##### Sector 1 Map
 
@@ -141,7 +139,45 @@ In our example the list would look like
 
 With this list in hand, we can initiate a cursor on our table. If a field matches an element, their are properties and methods in an element we can ultilize to make a new cell in our table.
 
-To Be Continued....
+The first step is to take our graphic element and clone it.
+
+'''
+clone = <graphic object>.clone()
+'''
+
+We call the clone method to clone our graphic element. Just like copying and pasting in ArcMap.
+
+To move our cell down all we must needs do is find the height of our cell and subtract it from the Y-coordinate of our element. Fortunately [accessing properties](http://resources.arcgis.com/en/help/main/10.1/index.html#//00s300000040000000) is straightfoward.
+
+
+'''
+height = clone.elementHeight
+clone.elementPositionY -= height
+'''
+
+In a snap, our map would now display:
+
+| Building_Name          |
+| :--------------------: |
+| [empty cell]           |
+
+Working with text elements is very much the same. You can access a text elements dimensions or coordinates as well as other properties such as the "text" in your text element or the fontSize.
+
+To move the text into the cell below you can use the height from your graphic object:
+
+'''
+text_clone = <text object>.clone()
+clone.elementPositionY -= height
+clone.text = "Sad Ice Cream"
+'''
+
+| Building_Name          |
+| :--------------------: |
+| Sad Ice Cream          |
+
+And that's the bulk of working with elements in ArcMap. Now, for more advanced users you might notice that the manipulation of elements is limited. If you dive into all the properties available to style and design graphic and text objects in ArcMap, you will find a tome before you.
+
+ArcPy isn't there to take you through the tome. It performs the core functions with ease, which is more often then not all you need.
 
 ### Tool Parameters
 

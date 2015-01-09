@@ -22,6 +22,20 @@ def get_element_coordinates (element_object):
     ''' return tuple of element coordinates '''
     return element_object.elementPositionY, element_object.elementPositionX
 
+def make_graphic_cell(graphic_object, row_depth):
+    graphic_height = get_element_dimensions(graphic_object)[0]
+    graphic_clone = graphic_object.clone()
+    graphic_clone.elementPositionY -= (graphic_height * row_depth)
+
+def make_text_cell(text_object, graphic_object, text_content, row_depth):
+    graphic_height, graphic_width = get_element_dimensions(graphic_object)
+    graphic_x = get_element_coordinates(graphic_object)[1]
+    text_clone = text_object.clone()
+    text_clone.elementPositionY -= (graphic_height * row_depth)
+    text_clone.text = text_content
+    text_width = get_element_dimensions(text_clone)[1]
+    text_clone.elementPositionX = (graphic_x + (graphic_width / 2.0)) - (text_width / 2.0)
+
 def to_pdf(map_doc, destination, page_id, page_index):
     ''' moves through data driven pages, exporting pdf '''
     map_doc.dataDrivenPages.currentPageID = page_id
@@ -49,7 +63,7 @@ class GenerateTable(object):
     ''' To cycle through a ddp setup in an mxd and export out a unique table
         on each map, field names must match exactly between graphic and text
         elements in an mxd and the table passed into the class. Further, the
-        ddp index name must also match a field in the table. '''
+        ddp index name must also match a field in the table '''
     def __init__ (self, mxd, data, destination):
         self.mxd = mxd
         self.table = data
@@ -73,39 +87,22 @@ class GenerateTable(object):
             been constructed beforehand '''
         map_doc = arcpy.mapping.MapDocument(self.mxd)
         page_index = map_page.getValue(self.ddp_field)
-        self.stage_data(map_doc, page_index)
+        self.build_rows(map_doc, page_index)
         to_pdf(map_doc, self.destination, page_id, page_index)
 
-    def stage_data(self, map_doc, page_index):
-        ''' Grab all the named elements (text and graphic elements should be
-            of equal length and equal keys) and then build out each column,
-            they key that binds all this is the element name which should
-            match the field name in the table and ddp field name '''
-        graphics =  map_elements(map_doc, "GRAPHIC_ELEMENT")
-        text = map_elements(map_doc, "TEXT_ELEMENT")
-        for field in text.keys():
-            self.build_column(field, graphics[field], text[field], page_index)
 
-    def build_column(self, field, graphic_object, text_object, page_index):
-        ''' Constructs a column given an attribute field for all values that
-            match current index of data driven page. Center text elements in
-            mxd to center elements in table'''
+    def build_rows(self, map_doc, page_index):
+        ''' If you build it, they will come '''
+        graphic_map =  map_elements(map_doc, "GRAPHIC_ELEMENT")
+        text_map = map_elements(map_doc, "TEXT_ELEMENT")
         table_cursor = arcpy.SearchCursor(self.table)
-        i = 1
-        for table_row in table_cursor:
-            if table_row.getValue(self.ddp_field) == page_index:
-                graphic = graphic_object.clone()
-                text = text_object.clone()
-
-                graphic_height, graphic_width = get_element_dimensions(graphic_object)
-                graphic_x = get_element_coordinates(graphic_object)[1]
-                graphic.elementPositionY -= (graphic_height*i)
-
-                text.elementPositionY -= (graphic_height*i)
-                text.text = table_row.getValue(field)
-                text_width = get_element_dimensions(text)[1]
-                text.elementPositionX = (graphic_x + (graphic_width / 2.0)) - (text_width / 2.0)
-                i += 1
+        row_depth = 1
+        for row in table_cursor:
+            if row.getValue(self.ddp_field) == page_index:
+                for field in graphic_map.keys():
+                    make_graphic_cell(graphic_map[field], row_depth)
+                    make_text_cell(text_map[field], graphic_map[field], row.getValue(field), row_depth)
+                row_depth += 1
         del table_cursor
 
 ##
