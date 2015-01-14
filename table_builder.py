@@ -22,6 +22,40 @@ def get_element_coordinates (element_object):
     ''' return tuple of element coordinates '''
     return element_object.elementPositionY, element_object.elementPositionX
 
+def make_rectangle_text_cell(text_object, text_content, row_depth):
+    text_height, text_width = get_element_dimensions(text_object)
+    if row_depth != 0:
+        text_object = text_object.clone()
+        text_object.elementPositionY -= (text_height * row_depth)
+    text_object.text = text_content
+
+def to_pdf(map_doc, destination, page_id, page_index):
+    ''' moves through data driven pages, exporting pdf '''
+    map_doc.dataDrivenPages.currentPageID = page_id
+    print "Exporting to PDF: {}".format(page_index)
+    export_name = os.path.join(destination, "{}.pdf".format(page_index))
+    map_doc.dataDrivenPages.exportToPDF(export_name, "CURRENT",
+        resolution=300, picture_symbol="VECTORIZE_BITMAP")
+
+
+
+##
+##### MISC Functions
+##
+
+def move_arrow (map_doc, position_x, position_y):
+    ''' adjust the north arrow as needed dependent on whether north arrow
+        obstructs a view in ddp '''
+    north_arrow = map_elements(map_doc, "MAPSURROUND_ELEMENT")["North Arrow"]
+    north_arrow.elementPositionY = position_x
+    north_arrow.elementPositionX = position_y
+
+
+
+##
+##### Deprecated
+##
+
 def make_graphic_cell(graphic_object, row_depth):
     graphic_height = get_element_dimensions(graphic_object)[0]
     graphic_clone = graphic_object.clone()
@@ -36,24 +70,7 @@ def make_text_cell(text_object, graphic_object, text_content, row_depth):
     text_width = get_element_dimensions(text_clone)[1]
     text_clone.elementPositionX = (graphic_x + (graphic_width / 2.0)) - (text_width / 2.0)
 
-def to_pdf(map_doc, destination, page_id, page_index):
-    ''' moves through data driven pages, exporting pdf '''
-    map_doc.dataDrivenPages.currentPageID = page_id
-    print "Exporting to PDF: {}".format(page_index)
-    export_name = os.path.join(destination, "{}.pdf".format(page_index))
-    map_doc.dataDrivenPages.exportToPDF(export_name, "CURRENT",
-        resolution=300, picture_symbol="VECTORIZE_BITMAP")
 
-##
-##### MISC Functions
-##
-
-def move_arrow (map_doc, position_x, position_y):
-    ''' adjust the north arrow as needed dependent on whether north arrow
-        obstructs a view in ddp '''
-    north_arrow = map_elements(map_doc, "MAPSURROUND_ELEMENT")["North Arrow"]
-    north_arrow.elementPositionY = position_x
-    north_arrow.elementPositionX = position_y
 
 ##
 ##### Application
@@ -93,17 +110,17 @@ class GenerateTable(object):
 
     def build_rows(self, map_doc, page_index):
         ''' If you build it, they will come '''
-        graphic_map =  map_elements(map_doc, "GRAPHIC_ELEMENT")
         text_map = map_elements(map_doc, "TEXT_ELEMENT")
         table_cursor = arcpy.SearchCursor(self.table)
-        row_depth = 1
+        row_depth = 0
         for row in table_cursor:
             if row.getValue(self.ddp_field) == page_index:
-                for field in graphic_map.keys():
-                    make_graphic_cell(graphic_map[field], row_depth)
-                    make_text_cell(text_map[field], graphic_map[field], row.getValue(field), row_depth)
+                for field in text_map.keys():
+                    make_rectangle_text_cell(text_map[field], row.getValue(field), row_depth)
                 row_depth += 1
         del table_cursor
+
+
 
 ##
 ##### Application initialization
